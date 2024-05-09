@@ -15,6 +15,7 @@ Install-Module -Name Microsoft.Graph.Authentication # graph api module
 Install-Module -Name Microsoft.Graph.Applications # graph api module
 
 #>
+
 Write-Host "Starting Prerequisite check.."
 # Check for presence of prereqs on local machine, quit if they are missing
 $RequiredModules = @("PowerShellGet", "Microsoft.Graph.Authentication", "Microsoft.Graph.Applications")
@@ -38,15 +39,14 @@ Import-Module Microsoft.Graph.Applications
 # Start connection, with minimal scope. Using Interactive Auth
 Connect-MgGraph -Scopes "Application.ReadWrite.All Directory.ReadWrite.All" # tighten the scope/improve
 
-$AppObjectID = "b78da758-1e73-4345-ad88-01af1f66e413"
-
-$PasswordCredential = @{
-    DisplayName = "PS PW"
-    EndDateTime = "2025-12-18T00:00:00Z"
-    StartDateTime = "2024-1-1T00:00:00Z"
+$AppObjectID = "f2032bd7-8bd5-4aa7-8a86-8c519e7dc862"
+$KeyIDParams = @{
+	KeyId = "c92baac5-c486-4f58-8854-c0824eaa222b"
 }
 
-$NewPassword = Add-MgServicePrincipalPassword -ServicePrincipalId $AppObjectID -PasswordCredential $PasswordCredential
+
+
+#$NewPassword = Add-MgServicePrincipalPassword -ServicePrincipalId $AppObjectID -PasswordCredential $PasswordCredential
 
 <#
 # Get the inputs from user
@@ -56,26 +56,17 @@ $servicePrincipal = Get-MgServicePrincipal -Filter "AppId eq '$AppClientSecretID
 #>
 
 
+
 <#
-# MS says to use a hash table for the secret value, move the variable into that table
-$KeyIDParams = @{
-    KeyId = $KeyID
-}
-
-# Remove the expired Client Secret
-Remove-MgServicePrincipalPassword -ServicePrincipalId $AppObjectID -BodyParameter $KeyIDParams
-
-
 # Get/Set App ID and expiration
 $endDate = (Get-Date).AddYears(1) # Set end date to 12 months from now
 $app = Get-MgServicePrincipal -Filter "AppId eq '$AppObjectID'" # prep the app client ID before setting
 $objectId = $app.ObjectId # set the client ID
 
-$base64secret = Add-MgServicePrincipalPassword -ObjectId $objectId -EndDate $endDate
-Add-MgServicePrincipalKey -ObjectId $objectId -EndDate $endDate -Type Symmetric -Usage Verify -Value $base64secret.Value
-Add-MgServicePrincipalKey -ObjectId $objectId -EndDate $endDate -Type Symmetric -Usage Sign -Value $base64secret.Value
+$base64secret = Add-MgServicePrincipalPassword -ObjectId $AppObjectID -EndDate $endDate
+Add-MgServicePrincipalKey -ObjectId $AppObjectID -EndDate $endDate -Type Symmetric -Usage Verify -Value $base64secret.Value
+Add-MgServicePrincipalKey -ObjectId $AppObjectID -EndDate $endDate -Type Symmetric -Usage Sign -Value $base64secret.Value
 
 [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($base64secret.Value))
 $base64secret.EndDate # Print the end date.
-
 #>
