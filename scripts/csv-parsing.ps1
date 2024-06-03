@@ -15,27 +15,28 @@ $allowedMethods = @(
     "Microsoft Authenticator app (push notification)"
 )
 
-# Initialize an array to hold the results
-$results = @()
+# Initialize an array to hold the user IDs
+$userIDsToOutput = @()
 
 # Loop through each line in the registration details CSV
 foreach ($user in $registrationDetails) {
-    # Check if the user's registration methods contain only allowed methods
-    $methods = $user.methodsRegistered -split ";"
-    $unwantedMethods = $methods | Where-Object { $_ -notin $allowedMethods }
+    # Split the methodsRegistered column into an array of methods
+    $methods = $user.methodsRegistered -split "\|"
+    $methods = $methods.Trim() # Remove leading and trailing spaces from each method
+    
+    # Check if there is at least one allowed method
+    $hasAllowedMethod = $methods | Where-Object { $_ -in $allowedMethods }
 
-    # If there are unwanted methods, add the user ID to the results
-    if ($unwantedMethods.Count -gt 0) {
+    # If there are no allowed methods, add the user ID to the results
+    if ($hasAllowedMethod.Count -eq 0) {
         $userID = ($userIDs | Where-Object { $_.emailAddress -eq $user.emailAddress }).userID
-        $results += [PSCustomObject]@{
-            UserID = $userID
-            EmailAddress = $user.emailAddress
-            UnwantedMethods = ($unwantedMethods -join "; ")
+        if ($userID) {
+            $userIDsToOutput += $userID
         }
     }
 }
 
-# Export the results to a new CSV file
-$results | Export-Csv -Path $outputPath -NoTypeInformation
+# Export the user IDs to a new CSV file
+$userIDsToOutput | Export-Csv -Path $outputPath -NoTypeInformation -Force
 
 Write-Host "Script completed. Check the output at $outputPath"
