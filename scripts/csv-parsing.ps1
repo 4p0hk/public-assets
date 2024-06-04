@@ -1,42 +1,63 @@
-# Define the paths to the input CSV files
-$registrationDetailsPath = "C:\path\to\your\registrationDetails.csv"
-$userIDsPath = "C:\path\to\your\userIDs.csv"
-$outputPath = "C:\path\to\your\output.csv"
+# Import required modules
+Import-Module Microsoft.Graph.Identity.SignIns
+Import-Module Microsoft.Graph.Users
 
-# Read the CSV files into variables
-$registrationDetails = Import-Csv -Path $registrationDetailsPath
-$userIDs = Import-Csv -Path $userIDsPath
+# Define accepted MFA methods
+$acceptedMethods = @("MicrosoftAuthenticator", "Fido2", "WindowsHelloForBusiness")
 
-# Define the allowed registration methods
-$allowedMethods = @(
-    "Windows Hello For Business",
-    "Microsoft Passwordless phone sign-in",
-    "Software OATH token",
-    "Microsoft Authenticator app (push notification)"
-)
+# Read the input CSV file containing UPNs
+$inputCsv = "path\to\input.csv"
+$outputCsv = "path\to\non_compliant_users.csv"
+$userUpns = Import-Csv -Path $inputCsv
 
-# Initialize an array to hold the user IDs
-$userIDsToOutput = @()
+# Initialize an array to store non-compliant users
+$nonCompliantUsers = @()
 
-# Loop through each line in the registration details CSV
-foreach ($user in $registrationDetails) {
-    # Split the methodsRegistered column into an array of methods
-    $methods = $user.methodsRegistered -split "\|"
-    $methods = $methods.Trim() # Remove leading and trailing spaces from each method
-    
-    # Check if there is at least one allowed method
-    $hasAllowedMethod = $methods | Where-Object { $_ -in $allowedMethods }
+# Function to get the MFA methods for a user
+function Get-MfaMethods($userUpn) {
+    try {
+        $user = Get-MgUser -UserId $userUpn
+        $mfaMethods = Get-MgUserAuthenticationMethod -UserId $user.Id
+        return $mfaMethods
+    } catch {
+        Write-Host "Failed to retrieve MFA methods for $userUpn"
+        return $null
+    }
+}
 
-    # If there are no allowed methods, add the user ID to the results
-    if ($hasAllowedMethod.Count -eq 0) {
-        $userID = ($userIDs | Where-Object { $_.emailAddress -eq $user.emailAddress }).userID
-        if ($userID) {
-            $userIDsToOutput += $userID
+# Process each user in the input CSV
+foreach ($user in $userUpns) {
+    $upn = $user.UPN
+    Write-Host "Processing user: $upn"
+
+    $mfaMethods = Get-MfaMethods -userUpn $upn
+    if ($mfaMethods -eq $null) {
+        Write-Host "No MFA methods found for $upn"
+        $nonCompliantUsers += [pscustomobject]@{
+            UPN = $upn
+            Reason = "No MFA methods found"
+        }
+    } else {
+        $isCompliant = $false
+        foreach ($method in $mfaMethods) {
+            if ($acceptedMethods -contains $method.MethodType) {
+                $isCompliant = $true
+                break
+            }
+        }
+
+        if (-not $isCompliant) {
+            Write-Host "$upn is non-compliant"
+            $nonCompliantUsers += [pscustomobject]@{
+                UPN = $upn
+                Reason = "No accepted MFA methods"
+            }
+        } else {
+            Write-Host "$upn is compliant"
         }
     }
 }
 
-# Export the user IDs to a new CSV file
-$userIDsToOutput | Export-Csv -Path $outputPath -NoTypeInformation -Force
-
-Write-Host "Script completed. Check the output at $outputPath"
+# Export non-compliant users to an output CSV file
+$nonCompliantUsers | Export-Csv -Path $outputCsv -NoTypeInformation
+Write-Host "Non-compliant users have been exported to $outputCsv"
