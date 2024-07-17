@@ -5,7 +5,7 @@ $outputFilePath = "C:\path\to\output.csv"
 # Connect to Microsoft Graph
 $clientId = "YOUR_CLIENT_ID"
 $tenantId = "YOUR_TENANT_ID"
-$scopes = "Group.Read.All"
+$scopes = "Group.Read.All, User.Read.All"
 
 Connect-MgGraph -ClientId $clientId -TenantId $tenantId -Scopes $scopes
 
@@ -31,14 +31,17 @@ foreach ($group in $groupNames) {
     }
 
     $groupId = $groupDetails.Id
-    $members = Get-MgGroupMember -GroupId $groupId -All -Property "id,displayName,userPrincipalName"
+    $members = Get-MgGroupMember -GroupId $groupId -All
 
     foreach ($member in $members) {
-        $groupMemberships += [pscustomobject]@{
-            GroupName = $group.Name
-            MemberId  = $member.Id
-            MemberDisplayName = $member.DisplayName
-            MemberUserPrincipalName = $member.UserPrincipalName
+        try {
+            $userDetails = Get-MgUser -UserId $member.Id -Property "mail"
+            $groupMemberships += [pscustomobject]@{
+                GroupName = $group.Name
+                UserEmail = $userDetails.Mail
+            }
+        } catch {
+            Write-Output "Unable to retrieve details for user: $($member.Id)"
         }
     }
 
