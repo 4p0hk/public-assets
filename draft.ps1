@@ -1,61 +1,54 @@
-# Import the Microsoft.Graph module
-Import-Module Microsoft.Graph
+# Define input and output file paths
+$inputFilePath = "C:\path\to\input.csv"
+$outputFilePath = "C:\path\to\output.csv"
 
-# Function to get MS Graph Access Token using Device Code flow
-function Get-MSGraphTokenDeviceCode {
-    Write-Host "Please authenticate using the provided device code..."
-    $tokenResponse = Get-MgGraphAuthenticationToken -DeviceCode -Scopes "User.Read.All"
-    return $tokenResponse
-}
+# Connect to Microsoft Graph
+$clientId = "YOUR_CLIENT_ID"
+$tenantId = "YOUR_TENANT_ID"
+$scopes = "Group.Read.All"
 
-# Function to get user details
-function Get-UserJobTitle {
-    param (
-        [string]$upn
-    )
+Connect-MgGraph -ClientId $clientId -TenantId $tenantId -Scopes $scopes
 
-    try {
-        $user = Get-MgUser -UserId $upn -ErrorAction Stop
-        return @{
-            userPrincipalName = $user.UserPrincipalName
-            jobTitle = $user.JobTitle
-        }
-    } catch {
-        Write-Error "Failed to get details for user $upn: $_"
-        return @{
-            userPrincipalName = $upn
-            jobTitle = "Error fetching details"
+# Read the input CSV file containing group names
+$groupNames = Import-Csv -Path $inputFilePath
+
+# Initialize an array to store the output
+$groupMemberships = @()
+
+# Output the count of groups to be enumerated
+Write-Output "Total groups to enumerate: $($groupNames.Count)"
+
+# Process each group
+foreach ($group in $groupNames) {
+    Write-Output "Processing group: $($group.Name)"
+    
+    # Get the group details
+    $groupDetails = Get-MgGroup -Filter "displayName eq '$($group.Name)'"
+    
+    if ($groupDetails.Count -eq 0) {
+        Write-Output "Group '$($group.Name)' not found."
+        continue
+    }
+
+    $groupId = $groupDetails.Id
+    $members = Get-MgGroupMember -GroupId $groupId -All
+
+    foreach ($member in $members) {
+        $groupMemberships += [pscustomobject]@{
+            GroupName = $group.Name
+            MemberId  = $member.Id
+            MemberDisplayName = $member.DisplayName
+            MemberUserPrincipalName = $member.UserPrincipalName
         }
     }
+
+    Write-Output "Finished processing group: $($group.Name)"
 }
 
-# Input and Output CSV file paths
-$inputCSV = "input.csv"
-$outputCSV = "output.csv"
+# Output the result to a CSV file
+$groupMemberships | Export-Csv -Path $outputFilePath -NoTypeInformation
 
-# Check if input CSV exists
-if (-Not (Test-Path -Path $inputCSV)) {
-    Write-Error "Input CSV file not found!"
-    exit
-}
+Write-Output "Completed processing all groups. Output written to $outputFilePath"
 
-# Read the input CSV
-$userUPNs = Import-Csv -Path $inputCSV
-
-# Authenticate and get token
-Get-MSGraphTokenDeviceCode
-
-# Initialize an array to hold the results
-$results = @()
-
-# Loop through each userPrincipalName and fetch job title
-foreach ($user in $userUPNs) {
-    $upn = $user.userPrincipalName
-    $userDetails = Get-UserJobTitle -upn $upn
-    $results += New-Object PSObject -Property $userDetails
-}
-
-# Export the results to a new CSV file
-$results | Export-Csv -Path $outputCSV -NoTypeInformation
-
-Write-Host "User details exported to $outputCSV"
+# Disconnect from Microsoft Graph
+Disconnect-MgGraph
