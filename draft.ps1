@@ -31,7 +31,7 @@ foreach ($group in $groupNames) {
     }
 
     $groupId = $groupDetails.Id
-    $members = Get-MgGroupMember -GroupId $groupId -All
+    $members = Get-MgGroupMember -GroupId $groupId -All -Property "id,displayName,userPrincipalName"
 
     foreach ($member in $members) {
         $groupMemberships += [pscustomobject]@{
