@@ -40,6 +40,7 @@ foreach ($group in $groupNames) {
                 GroupName = $group.Name
                 UserEmail = $userDetails.Mail
             }
+            Write-Output "Processed user: $($userDetails.Mail) from group: $($group.Name)"
         } catch {
             Write-Output "Unable to retrieve details for user: $($member.Id)"
         }
