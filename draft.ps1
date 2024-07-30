@@ -4,7 +4,7 @@ union SigninLogs, AADNonInteractiveUserSignInLogs
 | mv-apply NetworkLocationDetail = parse_json(NetworkLocationDetails) on (
     summarize
         untrustedNetworkTypeCount = countif(NetworkLocationDetail.networkType != "trustedNamedLocation"),
-        wellsFargoNetworkCount = countif(parse_json(tostring(NetworkLocationDetail.networkNames)) contains "namehere")
+        namehereNetworkCount = countif(parse_json(tostring(NetworkLocationDetail.networkNames)) contains "namehere")
     | where untrustedNetworkTypeCount > 0 or namehereNetworkCount > 0
 )
 | extend Description = strcat('User account ', UserPrincipalName,
