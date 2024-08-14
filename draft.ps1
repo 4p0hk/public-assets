@@ -1,17 +1,16 @@
-union SigninLogs, AADNonInteractiveUserSignInLogs
-| where tolower(UserPrincipalName) matches regex "sync_adis-(d)?(q)?pta.*"
-| where Category == "SignInLogs"
-| mv-apply NetworkLocationDetail = parse_json(NetworkLocationDetails) on (
-    summarize
-        untrustedNetworkTypeCount = countif(NetworkLocationDetail.networkType != "trustedNamedLocation"),
-        namehereNetworkCount = countif(parse_json(tostring(NetworkLocationDetail.networkNames)) contains "namehere")
-    | where untrustedNetworkTypeCount > 0 or namehereNetworkCount > 0
-)
-| extend Description = strcat('User account ', UserPrincipalName,
-    ' tried to login from outside PTA server cloud account on ', AppDisplayName,
-    ' application from ', Location, ' and IP address is ', IPAddress)
-| project
-    TimeGenerated, Description, AppDisplayName,
-    Category, OperationName, NetworkLocationDetails, ClientAppUsed,
-    Identity, IPAddress, IsInteractive,
-    Location, ResultDescription, UserPrincipalName, UserDisplayName, UserType, ResultType
+$scopes = "Directory.Read.All", `
+          "AuditLog.Read.All", `
+          "SecurityEvents.Read.All", `
+          "IdentityRiskEvent.Read.All", `
+          "User.Read.All", `
+          "Group.Read.All", `
+          "Device.Read.All", `
+          "RoleManagement.Read.Directory", `
+          "Reports.Read.All", `
+          "Policy.Read.All", `
+          "Organization.Read.All", `
+          "DeviceManagementRBAC.Read.All", `
+          "DeviceManagementConfiguration.Read.All", `
+          "DeviceManagementManagedDevices.Read.All", `
+          "DeviceManagementServiceConfig.Read.All", `
+          "Directory.AccessAsUser.All" # This is a broad permission that can be used for accessing a lot of directory data as a user.
