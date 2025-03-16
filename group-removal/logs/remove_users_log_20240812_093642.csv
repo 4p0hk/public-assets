@@ -1,0 +1,21 @@
+LogType,Category,UserPrincipalName,Message
+"Info","Info","","2024-08-12 09:38:51 - Found group 'SMS_EXCLUSION_DEV' with ObjectId: 348bcfe7-e1a3-4e48-8f95-d034b2fc4c64"
+"Info","Info","","2024-08-12 09:38:51 - CSV file format validated successfully."
+"Info","Info","","2024-08-12 09:38:51 - Starting the process to remove 4 users from the group."
+"Success","Processing","Dylan@holonetlab.onmicrosoft.com","2024-08-12 09:38:51 - Processing user: Dylan@holonetlab.onmicrosoft.com"
+"Success","Removal","Dylan@holonetlab.onmicrosoft.com","2024-08-12 09:38:52 - Successfully removed Dylan@holonetlab.onmicrosoft.com from the group. (1/4)"
+"Success","Processing","Isabel@holonetlab.onmicrosoft.com","2024-08-12 09:38:52 - Processing user: Isabel@holonetlab.onmicrosoft.com"
+"Success","Removal","Isabel@holonetlab.onmicrosoft.com","2024-08-12 09:38:52 - Successfully removed Isabel@holonetlab.onmicrosoft.com from the group. (2/4)"
+"Success","Processing","labuserprice@holonetlab.onmicrosoft.com","2024-08-12 09:38:52 - Processing user: labuserprice@holonetlab.onmicrosoft.com"
+"Failure","Not a Member","labuserprice@holonetlab.onmicrosoft.com","2024-08-12 09:38:52 - ERROR: User 'labuserprice@holonetlab.onmicrosoft.com' is not a member of the group."
+"Success","Processing","fakeuser@fakedomain.com","2024-08-12 09:38:52 - Processing user: fakeuser@fakedomain.com"
+"Failure","Removal Error","fakeuser@fakedomain.com","2024-08-12 09:38:52 - ERROR: Failed to remove fakeuser@fakedomain.com from the group. Error: Error occurred while executing GetUser 
+Code: Request_ResourceNotFound
+Message: Resource 'fakeuser@fakedomain.com' does not exist or one of its queried reference-property objects are not present.
+RequestId: 4c4f50d2-d08a-4ac3-9144-f117ccf539ed
+DateTimeStamp: Mon, 12 Aug 2024 16:38:52 GMT
+HttpStatusCode: NotFound
+HttpStatusDescription: Not Found
+HttpResponseStatus: Completed
+"
+"Info","Info","","2024-08-12 09:38:52 - Process completed. 2 out of 4 users were successfully removed from the group."
